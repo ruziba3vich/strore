@@ -341,8 +341,9 @@ func caesarDecrypt(cipherText string, shift int) string {
 
 func signUp (u model.Person) bool {
 	_, ok := emailcheck.CHeckEmail(u.Email)
-	if ok {
+	if ! ok {
 		db.UserDb[u.Email] = u
+		return true
 	}
 	return false
 }
