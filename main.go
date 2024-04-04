@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	db "strore/database"
+	"strore/emailcheck"
 	model "strore/models"
 	auth "strore/services"
 
@@ -85,6 +86,8 @@ func init() {
 		db.ProductsDb[newProduct] = numberOfProducts
 	}
 }
+
+
 
 func main() {
 	var u interface{}
@@ -176,7 +179,7 @@ func main() {
 			
 		default:
 			isAdmin := 0
-			fmt.Print("1 -> Adminga kirish / 2 -> Userga kirish : ")
+			fmt.Print("1 -> Adminga kirish / 2 -> Userga kirish : 3 -> Ro'yhatdan o'tish : ")
 			fmt.Scan(& isAdmin)
 			if isAdmin == 1 {
 				var adminUsername string
@@ -193,12 +196,39 @@ func main() {
 				} else {
 					ppg.Println("Noto'g'ri login yoki parol !")
 				}
-			} else {
+			} else if isAdmin == 2 {
 				uuu := model.Person {}
 				signIn(& uuu)
 				u = uuu
+			} else {
+				var user_ model.Person
+				fmt.Print("Ismingizni kiriting : ")
+				fmt.Scan(& user_.Name)
+				fmt.Print("Familyangizni kiriting : ")
+				fmt.Scan(& user_.Name)
+				fmt.Print("Yoshingizni kiriting : ")
+				fmt.Scan(& user_.Age)
+				fmt.Print("Telefon raqamingizni kiriting : ")
+				fmt.Scan(& user_.Phone)
+				fmt.Print("Emailingizni kiriting : ")
+				fmt.Scan(& user_.Email)
+				fmt.Print("Profil uchun parol o'ylab toping : ")
+				fmt.Scan(& user_.Name)
+				var gen int
+				fmt.Print("Jinsingizni tanlang 1 -> Erkak / 2 -> Ayol : ")
+				fmt.Scan(& gen)
+				user_.Gender = gen == 1
+				ok := signUp(user_)
+
+				if ok {
+					fmt.Println("Muvoffaqayatli ro'yhatdan o'tdingiz !")
+				} else {
+					ppg.Println("Ushbu e-mail tizim ro'yhatida mavjud !")
+				}
 			}
 		}
+		ppg.Print("Yana qandaydir amal bajarasizmi 1 -> ha / 2 -> yo'q : ")
+		fmt.Scan(& status)
 	}
 	fmt.Println("Dasturdan foydalanganingiz uchun raxmat !")
 }
@@ -307,4 +337,12 @@ func caesarEncrypt(plainText string, shift int) string {
 
 func caesarDecrypt(cipherText string, shift int) string {
 	return caesarEncrypt(cipherText, 26-shift)
+}
+
+func signUp (u model.Person) bool {
+	_, ok := emailcheck.CHeckEmail(u.Email)
+	if ok {
+		db.UserDb[u.Email] = u
+	}
+	return false
 }
