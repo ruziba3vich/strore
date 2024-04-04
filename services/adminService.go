@@ -16,5 +16,21 @@ func AddProduct(
 	db.ProductsDb[model.CreateProduct(
 		admin, name,
 		title, price,
-		currency, discount)] = numberOfProducts
+		currency)] = numberOfProducts
+}
+
+func CreateNewAdmin(
+	admin model.Admin,
+	username string,
+	password string,
+	name string,
+	surname string,
+	phone string) {
+	db.AdminsDb[model.Admin{
+		Username:     username,
+		Password:     password,
+		Name:         name,
+		Surname:      surname,
+		Phone_number: phone,
+	}] = admin
 }

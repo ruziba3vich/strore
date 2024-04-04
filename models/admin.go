@@ -1,13 +1,13 @@
 package model
 
 type Admin struct {
-	username string;
-	password string;
-	__name string;
-	__surname string;
-	__phone_number string;
+	Username string;
+	Password string;
+	Name string;
+	Surname string;
+	Phone_number string;
 }
 
 func (admin Admin) RepresentAdmin () string {
-	return admin.__name + " " + admin.__surname;
+	return admin.Name + " " + admin.Surname;
 }

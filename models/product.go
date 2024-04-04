@@ -3,8 +3,8 @@ package model
 type Currency string
 
 const (
-	dollar Currency = "$"
-	sum    Currency = "so'm"
+	Dollar Currency = "$"
+	Sum    Currency = "so'm"
 )
 
 type Product struct {
@@ -12,7 +12,6 @@ type Product struct {
 	title     string
 	price     int
 	currency  Currency
-	discount  int
 	createdBy Admin
 }
 
@@ -21,14 +20,12 @@ func CreateProduct(
 	name string,
 	title string,
 	price int,
-	currency Currency,
-	discount int) Product {
+	currency Currency) Product {
 	return Product{
 		name:      name,
 		title:     title,
 		price:     price,
 		currency:  currency,
-		discount:  discount,
 		createdBy: admin,
 	}
 }
