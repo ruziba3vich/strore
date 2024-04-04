@@ -1,14 +1,16 @@
 package services
 
 import (
-	m "strore/models"
+	"fmt"
 	db "strore/database"
+	m "strore/models"
 )
 
 func Authenticate(email string, password string) (m.Person, bool, string) {
 	dummy := m.NewPerson("", "", 0, false, "", "", "", "")
 	person, ok := db.UserDb[email]
 	if ok {
+		fmt.Println(person.Password, password)
 		if person.Password == password {
 			return person, ok, "Siz muvoffaqiyatli ravishda profilingizga kirdingiz !"
 		} else {

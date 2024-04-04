@@ -27,7 +27,7 @@ func init() {
 	if len(data) > 0 {
 		if data[0] == "USER" {
 			role = 1
-		} else {
+		} else if data[0] == "ADMIN" {
 			role = 2
 		}
 	}
@@ -46,7 +46,7 @@ func init() {
 			Phone: lineOfData[6],
 			Address: lineOfData[7],
 			Password: lineOfData[8],
-			Email: lineOfData[9],
+			Email: email,
 		}
 		db.UserDb[email] = newUser
 	}
@@ -104,7 +104,7 @@ func main() {
 
 		switch user := u.(type) {
 		case model.Admin:
-			ppg.Print("1 -> Yangi `product` yaratish\n2 -> Yangi `admin` yaratish\n    ->  ")
+			fmt.Print("1 -> Yangi `product` yaratish\n2 -> Yangi `admin` yaratish\n    ->  ")
 			fmt.Scan(&n)
 			if n == 2 {
 				var newName string
@@ -139,7 +139,7 @@ func main() {
 				fmt.Print("Yangi yaratilmoqchi bo'lgan product narxi : ")
 				var newPrice int
 				fmt.Scan(& newPrice)
-				fmt.Print("Yangi yaratilmoqchi bo'lgan product nomi : ")
+				fmt.Print("Yangi yaratilmoqchi bo'lgan product titli : ")
 				var newTitle string
 				fmt.Scanln(& newTitle)
 				fmt.Print("Yangi yaratilmoqchi bo'lgan product soni : ")
@@ -205,7 +205,7 @@ func main() {
 				fmt.Print("Ismingizni kiriting : ")
 				fmt.Scan(& user_.Name)
 				fmt.Print("Familyangizni kiriting : ")
-				fmt.Scan(& user_.Name)
+				fmt.Scan(& user_.Surname)
 				fmt.Print("Yoshingizni kiriting : ")
 				fmt.Scan(& user_.Age)
 				fmt.Print("Telefon raqamingizni kiriting : ")
@@ -213,7 +213,8 @@ func main() {
 				fmt.Print("Emailingizni kiriting : ")
 				fmt.Scan(& user_.Email)
 				fmt.Print("Profil uchun parol o'ylab toping : ")
-				fmt.Scan(& user_.Name)
+				fmt.Scan(& user_.Password)
+				user_.Password = caesarEncrypt(user_.Password, shift)
 				var gen int
 				fmt.Print("Jinsingizni tanlang 1 -> Erkak / 2 -> Ayol : ")
 				fmt.Scan(& gen)
@@ -281,6 +282,7 @@ func signIn(user * model.Person) {
 	var password string
 	fmt.Print("Profilga kirish uchun parolingizni kiriting : ")
 	fmt.Scan(&password)
+	password = caesarEncrypt(password, shift)
 	_, entered, message := auth.Authenticate(email, password)
 	if entered {
 		fmt.Println(message)
@@ -297,7 +299,7 @@ func signIn(user * model.Person) {
 }
 
 func authenticate() (data []string) {
-	file, err := os.Open("example.txt")
+	file, err := os.Open("database/token.txt")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -343,6 +345,26 @@ func signUp (u model.Person) bool {
 	_, ok := emailcheck.CHeckEmail(u.Email)
 	if ! ok {
 		db.UserDb[u.Email] = u
+		file, err := os.Create("database/token.txt")
+		if err != nil {
+			fmt.Println("Error creating file:", err)
+		}
+		defer file.Close()
+		age := strconv.Itoa(u.Age)
+		var gender string
+		if u.Gender {
+			gender = "true"
+		} else {
+			gender = "false"
+		}
+		// Phone: lineOfData[6],
+		// 	Address: lineOfData[7],
+		// 	Password: lineOfData[8],
+		text := "USER." + u.Name + "." + u.Surname + "." + age + "." + gender + "." + u.Phone + "." + u.Address + "." + u.Password
+		_, err = file.WriteString(text)
+		if err != nil {
+			fmt.Println("Error writing to file:", err)
+		}
 		return true
 	}
 	return false
