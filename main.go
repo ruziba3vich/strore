@@ -4,24 +4,22 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	db "strore/database"
 	model "strore/models"
 	auth "strore/services"
-	adminService "strore/services"
+
 	ppg "github.com/k0kubun/pp"
-	db "strore/database"
 )
 
 var shift int = 47
 
-var global_user any
+// var global_user any
 
 var role int
 
-// var makeUser func() func()(model.Person)
-// var makeAdmin func() func()(model.Admin)
-
-var authorize func() func()
+// var authorize func() func()
 
 func init() {
 	data := authenticate()
@@ -31,6 +29,60 @@ func init() {
 		} else {
 			role = 2
 		}
+	}
+
+	userDbSL, _ := ReadFile("database/users.txt")
+	for _, d := range userDbSL {
+		lineOfData := getDataFromLine(d)
+		email := lineOfData[0] + lineOfData[1]
+		age, _ := strconv.Atoi(lineOfData[4])
+		gender := lineOfData[5] == "true"
+		newUser := model.Person {
+			Name: lineOfData[2],
+			Surname: lineOfData[3],
+			Age: age,
+			Gender: gender,
+			Phone: lineOfData[6],
+			Address: lineOfData[7],
+			Password: lineOfData[8],
+			Email: lineOfData[9],
+		}
+		db.UserDb[email] = newUser
+	}
+
+	adminsDbSL, _ := ReadFile("database/admins.txt")
+
+	for _, d := range adminsDbSL {
+		lineOfData := getDataFromLine(d)
+		newAdmin := model.Admin {
+			Username: lineOfData[0],
+			Password: lineOfData[1],
+			Name: lineOfData[2],
+			Surname: lineOfData[3],
+			Phone_number: lineOfData[4],
+		}
+		db.AdminsDb[newAdmin.Username] = newAdmin
+	}
+
+	productsDbSL, _ := ReadFile("database/products.txt")
+
+	for _, d := range productsDbSL {
+		lineOfData := getDataFromLine(d)
+		
+		price, _ := strconv.Atoi(lineOfData[3])
+		var cur model.Currency
+		if lineOfData[4] == "$" {
+			cur = model.Dollar
+		} else {
+			cur = model.Sum
+		}
+		numberOfProducts, _ := strconv.Atoi(lineOfData[5])
+		newProduct := model.CreateProduct(
+								db.AdminsDb[lineOfData[0]],
+								lineOfData[1],
+								getTitle(lineOfData[2]),
+								price, cur)
+		db.ProductsDb[newProduct] = numberOfProducts
 	}
 }
 
@@ -67,7 +119,7 @@ func main() {
 				var newPhone string
 				fmt.Print("Yangi yaratmoqchi bo'lgan admin tel raqami : ")
 				fmt.Scan(& newPhone)
-				adminService.CreateNewAdmin(user, newUsername, newPassword, newName, newSurname, newPhone)
+				auth.CreateNewAdmin(newUsername, newPassword, newName, newSurname, newPhone)
 			} else {
 				fmt.Print("Yangi yaratilmoqchi bo'lgan product nomi : ")
 				var newName string
@@ -90,7 +142,7 @@ func main() {
 				fmt.Print("Yangi yaratilmoqchi bo'lgan product soni : ")
 				var newCount int
 				fmt.Scanln(& newCount)
-				adminService.AddProduct(user, newName, newTitle, newPrice, cur, 0, newCount)
+				auth.AddProduct(user, newName, newTitle, newPrice, cur, 0, newCount)
 				fmt.Println("Siz yangi product qo'shdingiz !")
 			}
 
@@ -102,119 +154,107 @@ func main() {
 				i ++
 				products = append(products, key)
 			}
-			fmt.Print("Sotib olmoqchi bo'lgan maxsulotingizni yuqoridagi\nro'yhatdagi tartib raqamini kiriting : ")
+			cart := map[model.Product] int {}
 			ordn := 0
-			fmt.Scan(& ordn)
-			num := 0
-			fmt.Println("ushbu maxsulotdan nechta sotib olmoqchisiz ? : ")
-			fmt.Scan(& num)
-			adminService.BuyProduct()
+			for ordn != -1 {
+				fmt.Print("Sotib olmoqchi bo'lgan maxsulotingizni yuqoridagi\nro'yhatdagi tartib raqamini kiriting yoki haridni to'xtatish uchun -1 : ")
+				fmt.Scan(& ordn)
+				num := 0
+				if ordn != -1 {
+					fmt.Println("ushbu maxsulotdan nechta sotib olmoqchisiz ? : ")
+					fmt.Scan(& num)
+					cart[products[ordn - 1]] += num
+				}
+			}
+			
+			ok, pro := auth.BuyProduct(user, cart)
+			if ok {
+				fmt.Println("Haridingiz muvoffaqayatli amalga oshirildi")
+			} else {
+				fmt.Println("Maxsulot sotib olishda xatolik", pro.GetName())
+			}
 			
 		default:
+			isAdmin := 0
+			fmt.Print("1 -> Adminga kirish / 2 -> Userga kirish : ")
+			fmt.Scan(& isAdmin)
+			if isAdmin == 1 {
+				var adminUsername string
+				var adminPassword string
+				fmt.Print("username kiriting : ")
+				fmt.Scan(& adminUsername)
+				fmt.Print("password kiriting : ")
+				fmt.Scan(& adminPassword)
 
+				yy, ok := signInAsAdmin(adminUsername, adminPassword)
+				if ok {
+					role = 2
+					u = yy
+				} else {
+					ppg.Println("Noto'g'ri login yoki parol !")
+				}
+			} else {
+				uuu := model.Person {}
+				signIn(& uuu)
+				u = uuu
+			}
 		}
-
-		// fmt.Println("Quyidagi menu dagi imkoniyatlardan birini tanlang")
-		// fmt.Print("1 -> barcha foydalanuvchilarni ko'rish\n2 -> Foydalanuvchini qidirish\n3 -> Ro'yhatdan o'tish\n4 -> Profilga kirish : ")
-		// fmt.Scan(&n)
-
-		// for n > 4 || n < 1 {
-		// 	fmt.Println("Quyidagi menu dagi imkoniyatlardan birini tanlang")
-		// 	fmt.Print("1 -> barcha foydalanuvchilarni ko'rish\n2 -> Foydalanuvchini qidirish\n3 -> Ro'yhatdan o'tish\n4 -> Profilga kirish : ")
-		// 	fmt.Scan(&n)
-		// }
-
-		// if n == 1 {
-		// 	for _, person := range db.UserDb {
-		// 		for _, info := range person.PersonDTO() {
-		// 			ppg.Println(info)
-		// 		}
-		// 		fmt.Println()
-		// 		fmt.Println()
-		// 	}
-		// } else if n == 2 {
-		// 	var name string
-		// 	var surname string
-
-		// 	fmt.Print("Qidirilayotgan foydalanuvchining ismini kiriting : ")
-		// 	fmt.Scan(&name)
-		// 	fmt.Print("Qidirilayotgan foydalanuvchining familyasini kiriting : ")
-		// 	fmt.Scan(&surname)
-		// 	ok, person := searchservice.Search(name, surname)
-		// 	if ok {
-		// 		for _, info := range person.PersonDTO() {
-		// 			ppg.Println(info)
-		// 		}
-		// 		fmt.Println()
-		// 		fmt.Println()
-		// 	} else {
-		// 		fmt.Println("Ushbu ism familiyada foydalanuvchi topilmadi")
-		// 	}
-		// } else if n == 3 {
-		// 	var newPerson model.Person
-		// 	fmt.Print("Iltimos ismingizni kiriting : ")
-		// 	fmt.Scan(&newPerson.Name)
-		// 	fmt.Print("Iltimos familyangizni kiriting : ")
-		// 	fmt.Scan(&newPerson.Surname)
-		// 	fmt.Print("Iltimos yoshingizni kiriting : ")
-		// 	fmt.Scan(&newPerson.Age)
-		// 	fmt.Print("Iltimos jinsingizni tanlang kiriting : 1 -> erkak / 2 -> ayol : ")
-		// 	var gender int
-		// 	fmt.Scan(&gender)
-		// 	newPerson.SetGender(gender)
-		// 	fmt.Print("Iltimos telefon raqamingizni kiriting : ")
-		// 	fmt.Scan(&newPerson.Phone)
-		// 	fmt.Print("Iltimos yashash manzilingizni kiriting kiriting : ")
-		// 	fmt.Scan(&newPerson.Address)
-		// 	var email string
-		// 	fmt.Print("Iltimos profilingiz uchun emailingizni kiriting : ")
-		// 	fmt.Scan(&email)
-
-		// 	var notSignedIn bool = true
-
-		// 	for _, response := check.CHeckEmail(email); response; {
-		// 		fmt.Print("Bunday emai bizda mavjud, 1 boshqa email kiritish; -> 2 -> profilga kirish; ")
-		// 		fmt.Scan(&n)
-		// 		if n == 1 {
-		// 			fmt.Scan(&email)
-		// 		} else {
-		// 			signIn(&user)
-		// 			notSignedIn = false
-		// 			break
-		// 		}
-		// 	}
-
-		// 	if notSignedIn {
-		// 		newPerson.Email = email
-		// 		fmt.Print("Iltimos profilingiz uchun parol o'ylab toping : ")
-		// 		fmt.Scan(&newPerson.Password)
-		// 		registered := register.Register(newPerson)
-		// 		if registered {
-		// 			fmt.Println("Siz muvoffaqayatli ro'yhatdan o'tdingiz !")
-		// 		} else {
-		// 			fmt.Println("Ro'yhatdan o'tishda hatolik . . .")
-		// 		}
-		// 	}
-		// } else {
-		// 	signIn(user)
-		// }
-		// fmt.Print("Yana qandaydir amal bajarasizmi ? 1 -> Ha/ 2 -> Yo'q : ")
-		// fmt.Scan(&status)
 	}
 	fmt.Println("Dasturdan foydalanganingiz uchun raxmat !")
 }
 
-func signIn(user model.Person) {
+func signInAsAdmin(username string, password string) (a model.Admin, got bool) {
+	admin, ok := db.AdminsDb[username]
+	if ok {
+		password = caesarEncrypt(password, shift)
+		if admin.Password == password {
+			return admin, true
+		} else {
+			return a, false
+		}
+	}
+	return a, got
+}
+
+func getTitle(s string) (str string) {
+	ss := strings.Split(s, "_")
+	for _, word := range ss {
+		str += word + " "
+	}
+	return str
+}
+
+func getDataFromLine(s string) [] string {
+	return strings.Split(s, ".")
+}
+
+func ReadFile(s string) (res [] string, err error) {
+	file, err := os.Open(s)
+    if err != nil {
+        return res, err
+    }
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+
+    for scanner.Scan() {
+        line := scanner.Text()
+		res = append(res, line)
+    }
+	return res, nil
+}
+
+func signIn(user * model.Person) {
 	fmt.Print("Profilga kirish uchun emailingizni kiriting : ")
 	var email string
 	fmt.Scan(&email)
 	var password string
 	fmt.Print("Profilga kirish uchun parolingizni kiriting : ")
 	fmt.Scan(&password)
-	pp, entered, message := auth.Authenticate(email, password)
+	_, entered, message := auth.Authenticate(email, password)
 	if entered {
 		fmt.Println(message)
-		*user = pp
+		// user = pp
 	} else {
 		ppg.Println(message)
 		wants := 0

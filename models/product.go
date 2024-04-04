@@ -7,6 +7,7 @@ const (
 	Sum    Currency = "so'm"
 )
 
+
 type Product struct {
 	name      string
 	title     string
@@ -14,6 +15,7 @@ type Product struct {
 	currency  Currency
 	createdBy Admin
 }
+
 
 func CreateProduct(
 	admin Admin,
@@ -28,4 +30,9 @@ func CreateProduct(
 		currency:  currency,
 		createdBy: admin,
 	}
+}
+
+
+func (p Product) GetName () string {
+	return p.name
 }

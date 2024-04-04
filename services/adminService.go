@@ -20,17 +20,16 @@ func AddProduct(
 }
 
 func CreateNewAdmin(
-	admin model.Admin,
 	username string,
 	password string,
 	name string,
 	surname string,
 	phone string) {
-	db.AdminsDb[model.Admin{
+	db.AdminsDb[username] = model.Admin{
 		Username:     username,
 		Password:     password,
 		Name:         name,
 		Surname:      surname,
 		Phone_number: phone,
-	}] = admin
+	}
 }
